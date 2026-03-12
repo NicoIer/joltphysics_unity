@@ -12,7 +12,7 @@ namespace JoltPhysics.Unity
     {
         [Header("Body Settings")]
         [SerializeField] MotionType _motionType = MotionType.Dynamic;
-        [SerializeField] uint _objectLayer = JoltPhysicsWorld.LayerDynamic;
+        [SerializeField] uint _objectLayer = 1;
 
         [Header("Material")]
         [SerializeField] float _friction = 0.2f;

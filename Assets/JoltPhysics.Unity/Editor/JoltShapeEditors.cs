@@ -2,66 +2,74 @@
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
 using UnityEditor;
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
 namespace JoltPhysics.Unity.Editor
 {
     [CustomEditor(typeof(JoltBoxShape))]
+    [CanEditMultipleObjects]
     public sealed class JoltBoxShapeEditor : UnityEditor.Editor
     {
-        SerializedProperty _halfExtent;
+        SerializedProperty _center;
+        SerializedProperty _size;
         SerializedProperty _convexRadius;
+
+        readonly BoxBoundsHandle _boundsHandle = new();
+        bool _editing;
 
         void OnEnable()
         {
-            _halfExtent = serializedObject.FindProperty("_halfExtent");
+            _center = serializedObject.FindProperty("_center");
+            _size = serializedObject.FindProperty("_size");
             _convexRadius = serializedObject.FindProperty("_convexRadius");
         }
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-            EditorGUILayout.PropertyField(_halfExtent);
+
+            _editing = GUILayout.Toggle(_editing, EditorGUIUtility.TrTextContent("Edit Collider"),
+                "EditModeSingleButton", GUILayout.MinWidth(32));
+
+            EditorGUILayout.PropertyField(_center);
+            EditorGUILayout.PropertyField(_size);
             EditorGUILayout.PropertyField(_convexRadius);
             serializedObject.ApplyModifiedProperties();
         }
 
         void OnSceneGUI()
         {
+            if (!_editing) return;
+
             var shape = (JoltBoxShape)target;
             var t = shape.transform;
 
-            Handles.color = Color.green;
-            Handles.matrix = Matrix4x4.TRS(t.position, t.rotation, Vector3.one);
-
-            var halfExtent = shape.HalfExtent;
-
-            EditorGUI.BeginChangeCheck();
-
-            // Draw box handles on each axis
-            var newHalfExtent = halfExtent;
-
-            newHalfExtent.x = Handles.ScaleSlider(halfExtent.x, Vector3.zero, Vector3.right, Quaternion.identity, halfExtent.x + 0.5f, 0.01f);
-            newHalfExtent.y = Handles.ScaleSlider(halfExtent.y, Vector3.zero, Vector3.up, Quaternion.identity, halfExtent.y + 0.5f, 0.01f);
-            newHalfExtent.z = Handles.ScaleSlider(halfExtent.z, Vector3.zero, Vector3.forward, Quaternion.identity, halfExtent.z + 0.5f, 0.01f);
-
-            if (EditorGUI.EndChangeCheck())
+            using (new Handles.DrawingScope(Color.green,
+                       Matrix4x4.TRS(t.position, t.rotation, t.lossyScale)))
             {
-                Undo.RecordObject(shape, "Change Box Half Extent");
-                shape.HalfExtent = new Vector3(
-                    Mathf.Max(0.01f, newHalfExtent.x),
-                    Mathf.Max(0.01f, newHalfExtent.y),
-                    Mathf.Max(0.01f, newHalfExtent.z));
-            }
+                _boundsHandle.center = shape.Center;
+                _boundsHandle.size = shape.Size;
 
-            Handles.matrix = Matrix4x4.identity;
+                EditorGUI.BeginChangeCheck();
+                _boundsHandle.DrawHandle();
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(shape, "Modify Jolt Box Shape");
+                    shape.Center = _boundsHandle.center;
+                    shape.Size = _boundsHandle.size;
+                }
+            }
         }
     }
 
     [CustomEditor(typeof(JoltSphereShape))]
+    [CanEditMultipleObjects]
     public sealed class JoltSphereShapeEditor : UnityEditor.Editor
     {
         SerializedProperty _radius;
+        readonly SphereBoundsHandle _boundsHandle = new();
+        bool _editing;
 
         void OnEnable()
         {
@@ -71,31 +79,45 @@ namespace JoltPhysics.Unity.Editor
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
+
+            _editing = GUILayout.Toggle(_editing, EditorGUIUtility.TrTextContent("Edit Collider"),
+                "EditModeSingleButton", GUILayout.MinWidth(32));
+
             EditorGUILayout.PropertyField(_radius);
             serializedObject.ApplyModifiedProperties();
         }
 
         void OnSceneGUI()
         {
+            if (!_editing) return;
+
             var shape = (JoltSphereShape)target;
             var t = shape.transform;
 
-            Handles.color = Color.green;
-
-            EditorGUI.BeginChangeCheck();
-            float newRadius = Handles.RadiusHandle(t.rotation, t.position, shape.Radius);
-            if (EditorGUI.EndChangeCheck())
+            using (new Handles.DrawingScope(Color.green,
+                       Matrix4x4.TRS(t.position, t.rotation, Vector3.one)))
             {
-                Undo.RecordObject(shape, "Change Sphere Radius");
-                shape.Radius = Mathf.Max(0.01f, newRadius);
+                _boundsHandle.center = Vector3.zero;
+                _boundsHandle.radius = shape.Radius;
+
+                EditorGUI.BeginChangeCheck();
+                _boundsHandle.DrawHandle();
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(shape, "Modify Jolt Sphere Shape");
+                    shape.Radius = Mathf.Max(0.001f, _boundsHandle.radius);
+                }
             }
         }
     }
 
     [CustomEditor(typeof(JoltEllipsoidShape))]
+    [CanEditMultipleObjects]
     public sealed class JoltEllipsoidShapeEditor : UnityEditor.Editor
     {
         SerializedProperty _radii;
+        readonly BoxBoundsHandle _boundsHandle = new();
+        bool _editing;
 
         void OnEnable()
         {
@@ -105,41 +127,45 @@ namespace JoltPhysics.Unity.Editor
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
+
+            _editing = GUILayout.Toggle(_editing, EditorGUIUtility.TrTextContent("Edit Collider"),
+                "EditModeSingleButton", GUILayout.MinWidth(32));
+
             EditorGUILayout.PropertyField(_radii);
             serializedObject.ApplyModifiedProperties();
         }
 
         void OnSceneGUI()
         {
+            if (!_editing) return;
+
             var shape = (JoltEllipsoidShape)target;
             var t = shape.transform;
 
-            Handles.color = Color.green;
-            Handles.matrix = Matrix4x4.TRS(t.position, t.rotation, Vector3.one);
-
-            var radii = shape.Radii;
-
-            EditorGUI.BeginChangeCheck();
-            var newRadii = radii;
-
-            newRadii.x = Handles.ScaleSlider(radii.x, Vector3.zero, Vector3.right, Quaternion.identity, radii.x + 0.5f, 0.01f);
-            newRadii.y = Handles.ScaleSlider(radii.y, Vector3.zero, Vector3.up, Quaternion.identity, radii.y + 0.5f, 0.01f);
-            newRadii.z = Handles.ScaleSlider(radii.z, Vector3.zero, Vector3.forward, Quaternion.identity, radii.z + 0.5f, 0.01f);
-
-            if (EditorGUI.EndChangeCheck())
+            using (new Handles.DrawingScope(Color.green,
+                       Matrix4x4.TRS(t.position, t.rotation, Vector3.one)))
             {
-                Undo.RecordObject(shape, "Change Ellipsoid Radii");
-                shape.Radii = new Vector3(
-                    Mathf.Max(0.01f, newRadii.x),
-                    Mathf.Max(0.01f, newRadii.y),
-                    Mathf.Max(0.01f, newRadii.z));
-            }
+                // Size = diameter, so radii * 2
+                _boundsHandle.center = Vector3.zero;
+                _boundsHandle.size = shape.Radii * 2f;
 
-            Handles.matrix = Matrix4x4.identity;
+                EditorGUI.BeginChangeCheck();
+                _boundsHandle.DrawHandle();
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(shape, "Modify Jolt Ellipsoid Shape");
+                    var newSize = _boundsHandle.size;
+                    shape.Radii = new Vector3(
+                        Mathf.Max(0.001f, newSize.x * 0.5f),
+                        Mathf.Max(0.001f, newSize.y * 0.5f),
+                        Mathf.Max(0.001f, newSize.z * 0.5f));
+                }
+            }
         }
     }
 
     [CustomEditor(typeof(JoltMeshShape))]
+    [CanEditMultipleObjects]
     public sealed class JoltMeshShapeEditor : UnityEditor.Editor
     {
         SerializedProperty _mesh;

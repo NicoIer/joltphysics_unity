@@ -9,20 +9,7 @@ namespace JoltPhysics.Unity
 {
     public sealed class JoltPhysicsWorld : MonoBehaviour
     {
-        public const uint LayerStatic = 0;
-        public const uint LayerDynamic = 1;
-        const uint NumObjectLayers = 2;
-        const uint NumBroadPhaseLayers = 2;
-        const byte BroadPhaseLayerStatic = 0;
-        const byte BroadPhaseLayerDynamic = 1;
-
         public static JoltPhysicsWorld Instance { get; private set; }
-
-        [Header("Physics Settings")]
-        [SerializeField] Vector3 _gravity = new(0, -9.81f, 0);
-        [SerializeField] int _collisionSteps = 1;
-        [SerializeField] uint _maxBodies = 10240;
-        [SerializeField] uint _maxContactConstraints = 10240;
 
         PhysicsSystem _physicsSystem;
         JobSystemThreadPool _jobSystem;
@@ -52,6 +39,13 @@ namespace JoltPhysics.Unity
         {
             if (_initialized) return;
 
+            var config = JoltPhysicsSettings.Instance;
+            if (config == null)
+            {
+                Debug.LogError("JoltPhysicsSettings not found. Please create one via Project Settings > Jolt Physics.");
+                return;
+            }
+
             if (!JoltApi.Init())
             {
                 Debug.LogError("Failed to initialize Jolt Physics.");
@@ -60,25 +54,47 @@ namespace JoltPhysics.Unity
 
             _jobSystem = new JobSystemThreadPool();
 
-            // Set up layer configuration
-            _broadPhaseLayerInterface = new BroadPhaseLayerInterfaceTable(NumObjectLayers, NumBroadPhaseLayers);
-            _broadPhaseLayerInterface.MapObjectToBroadPhaseLayer(LayerStatic, BroadPhaseLayerStatic);
-            _broadPhaseLayerInterface.MapObjectToBroadPhaseLayer(LayerDynamic, BroadPhaseLayerDynamic);
+            int numObjectLayers = config.LayerCount;
+            int numBroadPhaseLayers = config.GetBroadPhaseLayerCount();
 
-            _objectLayerPairFilter = new ObjectLayerPairFilterTable(NumObjectLayers);
-            _objectLayerPairFilter.EnableCollision(LayerStatic, LayerDynamic);
-            _objectLayerPairFilter.EnableCollision(LayerDynamic, LayerDynamic);
+            // Map object layers -> broad phase layers
+            _broadPhaseLayerInterface = new BroadPhaseLayerInterfaceTable(
+                (uint)numObjectLayers, (uint)numBroadPhaseLayers);
+
+            var layers = config.Layers;
+            for (int i = 0; i < numObjectLayers; i++)
+            {
+                _broadPhaseLayerInterface.MapObjectToBroadPhaseLayer(
+                    (uint)i, layers[i].broadPhaseLayer);
+            }
+
+            // Set up object layer pair collision filter from settings
+            _objectLayerPairFilter = new ObjectLayerPairFilterTable((uint)numObjectLayers);
+            for (int i = 0; i < numObjectLayers; i++)
+            {
+                for (int j = i; j < numObjectLayers; j++)
+                {
+                    if (config.GetCollisionEnabled(i, j))
+                    {
+                        _objectLayerPairFilter.EnableCollision((uint)i, (uint)j);
+                    }
+                    else
+                    {
+                        _objectLayerPairFilter.DisableCollision((uint)i, (uint)j);
+                    }
+                }
+            }
 
             _objectVsBroadPhaseLayerFilter = new ObjectVsBroadPhaseLayerFilterTable(
-                _broadPhaseLayerInterface, NumBroadPhaseLayers,
-                _objectLayerPairFilter, NumObjectLayers);
+                _broadPhaseLayerInterface, (uint)numBroadPhaseLayers,
+                _objectLayerPairFilter, (uint)numObjectLayers);
 
             var settings = new PhysicsSystemSettings
             {
-                MaxBodies = _maxBodies,
+                MaxBodies = config.MaxBodies,
                 NumBodyMutexes = 0,
-                MaxBodyPairs = _maxBodies * 4,
-                MaxContactConstraints = _maxContactConstraints,
+                MaxBodyPairs = config.MaxBodies * 4,
+                MaxContactConstraints = config.MaxContactConstraints,
             };
 
             _physicsSystem = new PhysicsSystem(
@@ -87,7 +103,7 @@ namespace JoltPhysics.Unity
                 _objectLayerPairFilter,
                 _objectVsBroadPhaseLayerFilter);
 
-            _physicsSystem.Gravity = _gravity.ToJolt();
+            _physicsSystem.Gravity = config.Gravity.ToJolt();
             BodyInterface = _physicsSystem.GetBodyInterface();
 
             _initialized = true;
@@ -97,7 +113,10 @@ namespace JoltPhysics.Unity
         {
             if (!_initialized) return;
 
-            _physicsSystem.Update(Time.fixedDeltaTime, _collisionSteps, _jobSystem);
+            var config = JoltPhysicsSettings.Instance;
+            int collisionSteps = config != null ? config.CollisionSteps : 1;
+
+            _physicsSystem.Update(Time.fixedDeltaTime, collisionSteps, _jobSystem);
 
             // Sync transforms from Jolt to Unity
             for (int i = _bodies.Count - 1; i >= 0; i--)
@@ -153,14 +172,6 @@ namespace JoltPhysics.Unity
             }
 
             Instance = null;
-        }
-
-        void OnValidate()
-        {
-            if (_initialized && _physicsSystem != null)
-            {
-                _physicsSystem.Gravity = _gravity.ToJolt();
-            }
         }
     }
 }

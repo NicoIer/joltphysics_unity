@@ -35,13 +35,24 @@ namespace JoltPhysics.Unity.Editor
             EditorGUILayout.LabelField("Body Settings", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(_motionType);
 
-            // Show layer as a dropdown with named options
-            var layerNames = new[] { "Static (0)", "Dynamic (1)" };
-            int layerIndex = (int)_objectLayer.longValue;
-            if (layerIndex < 0 || layerIndex >= layerNames.Length)
-                layerIndex = 1;
-            int newLayer = EditorGUILayout.Popup("Object Layer", layerIndex, layerNames);
-            _objectLayer.longValue = (uint)newLayer;
+            // Layer dropdown using names from JoltPhysicsSettings
+            var settings = JoltPhysicsSettings.Instance;
+            if (settings != null && settings.LayerCount > 0)
+            {
+                var layerNames = settings.GetLayerNames();
+                int layerIndex = (int)_objectLayer.longValue;
+                if (layerIndex < 0 || layerIndex >= layerNames.Length)
+                    layerIndex = 0;
+                int newLayer = EditorGUILayout.Popup("Object Layer", layerIndex, layerNames);
+                _objectLayer.longValue = (uint)newLayer;
+            }
+            else
+            {
+                EditorGUILayout.PropertyField(_objectLayer);
+                EditorGUILayout.HelpBox(
+                    "JoltPhysicsSettings not found. Configure layers in Project Settings > Jolt Physics.",
+                    MessageType.Warning);
+            }
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Material", EditorStyles.boldLabel);
