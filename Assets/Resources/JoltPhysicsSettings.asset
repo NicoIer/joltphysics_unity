@@ -21,4 +21,4 @@ MonoBehaviour:
     broadPhaseLayer: 0
   - name: Dynamic
     broadPhaseLayer: 1
-  _collisionMatrix: 000101
+  _collisionMask: 0200000003000000

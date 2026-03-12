@@ -6,35 +6,16 @@ using UnityEngine;
 
 namespace JoltPhysics.Unity.Editor
 {
-    static class JoltPhysicsSettingsProvider
+    /// <summary>
+    /// Shared drawing code used by both the Project Settings panel and the ScriptableObject inspector.
+    /// </summary>
+    static class JoltPhysicsSettingsDrawer
     {
-        [SettingsProvider]
-        public static SettingsProvider CreateProvider()
-        {
-            return new SettingsProvider("Project/Jolt Physics", SettingsScope.Project)
-            {
-                label = "Jolt Physics",
-                guiHandler = OnGUI,
-                keywords = new[] { "Jolt", "Physics", "Layer", "Collision" }
-            };
-        }
-
         static bool _collisionMatrixFoldout = true;
         static Vector2 _scrollPos;
 
-        static void OnGUI(string searchContext)
+        public static void DrawSettings(JoltPhysicsSettings settings)
         {
-            var settings = JoltPhysicsSettings.Instance;
-            if (settings == null)
-            {
-                EditorGUILayout.HelpBox(
-                    "JoltPhysicsSettings asset not found. Click below to create one.",
-                    MessageType.Warning);
-                if (GUILayout.Button("Create Settings Asset"))
-                    _ = JoltPhysicsSettings.Instance;
-                return;
-            }
-
             var so = new SerializedObject(settings);
             so.Update();
 
@@ -66,8 +47,7 @@ namespace JoltPhysics.Unity.Editor
         }
 
         const float CheckboxSize = 16f;
-        const float LabelWidth = 100f;
-        const float RotatedLabelHeight = 80f;
+        const float RowHeight = 18f;
 
         static void DrawCollisionMatrix(JoltPhysicsSettings settings)
         {
@@ -79,49 +59,72 @@ namespace JoltPhysics.Unity.Editor
             }
 
             var layers = settings.Layers;
-            float matrixWidth = LabelWidth + n * CheckboxSize + 20f;
+
+            // Compute max label width from actual layer names
+            float maxLabelW = 40f;
+            for (int i = 0; i < n; i++)
+            {
+                float w = EditorStyles.label.CalcSize(new GUIContent(layers[i].name)).x;
+                if (w > maxLabelW) maxLabelW = w;
+            }
+            maxLabelW += 8f;
+
+            // Column headers are rotated -90°, so their text width becomes vertical height
+            float headerHeight = maxLabelW + 4f;
+            float totalWidth = maxLabelW + n * CheckboxSize + 20f;
+            float totalHeight = headerHeight + n * RowHeight + 10f;
 
             _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos,
-                GUILayout.MinHeight(RotatedLabelHeight + n * (CheckboxSize + 2f) + 20f));
+                GUILayout.MinHeight(Mathf.Min(totalHeight, 400f)));
 
-            // --- Rotated column headers at the top (right-aligned, like Unity Physics) ---
-            var headerRect = GUILayoutUtility.GetRect(matrixWidth, RotatedLabelHeight);
+            var areaRect = GUILayoutUtility.GetRect(totalWidth, totalHeight);
+
+            // Grid origin: top-left of checkbox area
+            float gridX = areaRect.x + maxLabelW;
+            float gridY = areaRect.y + headerHeight;
+
+            // --- Column headers rotated -90° (vertical text, like Unity Physics) ---
             var savedMatrix = GUI.matrix;
+            var headerStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                alignment = TextAnchor.MiddleLeft,
+            };
 
             for (int col = 0; col < n; col++)
             {
-                // Each column header positioned above its checkbox column
-                // Columns go right-to-left: column 0 is rightmost (matching Unity style)
-                int visualCol = n - 1 - col;
-                float x = headerRect.x + LabelWidth + visualCol * CheckboxSize + CheckboxSize * 0.5f;
-                float y = headerRect.y + RotatedLabelHeight;
+                float cx = gridX + col * CheckboxSize + CheckboxSize * 0.5f;
+                float cy = gridY;
 
-                var pivot = new Vector2(x, y);
-                GUIUtility.RotateAroundPivot(-45f, pivot);
+                var pivot = new Vector2(cx, cy);
+                GUIUtility.RotateAroundPivot(-90f, pivot);
 
-                var labelRect = new Rect(x - 4f, y - RotatedLabelHeight, RotatedLabelHeight, CheckboxSize);
-                GUI.Label(labelRect, layers[col].name, EditorStyles.miniLabel);
+                // After -90° rotation around pivot, the label extends rightward (= upward visually)
+                var labelRect = new Rect(cx, cy - CheckboxSize * 0.5f, maxLabelW, CheckboxSize);
+                GUI.Label(labelRect, layers[col].name, headerStyle);
 
                 GUI.matrix = savedMatrix;
             }
 
-            // --- Rows with checkboxes ---
+            // --- Rows (lower-left triangle) ---
+            var rowLabelStyle = new GUIStyle(EditorStyles.label)
+            {
+                alignment = TextAnchor.MiddleRight,
+            };
+
             for (int row = 0; row < n; row++)
             {
-                var rowRect = GUILayoutUtility.GetRect(matrixWidth, CheckboxSize + 2f);
+                float rowY = gridY + row * RowHeight;
 
-                // Row label on the left
-                var labelRect = new Rect(rowRect.x, rowRect.y, LabelWidth, CheckboxSize);
-                GUI.Label(labelRect, layers[row].name, EditorStyles.label);
+                // Row label on the left, right-aligned
+                var rowLabelRect = new Rect(areaRect.x, rowY, maxLabelW - 4f, RowHeight);
+                GUI.Label(rowLabelRect, layers[row].name, rowLabelStyle);
 
-                // Checkboxes: only draw the triangle (row collides with columns >= row)
-                // Columns are drawn right-to-left so column 0 is on the far right
-                for (int col = n - 1; col >= row; col--)
+                // Checkboxes: columns 0..row (lower-left triangle)
+                for (int col = 0; col <= row; col++)
                 {
-                    int visualCol = n - 1 - col;
                     var toggleRect = new Rect(
-                        rowRect.x + LabelWidth + visualCol * CheckboxSize,
-                        rowRect.y,
+                        gridX + col * CheckboxSize,
+                        rowY + (RowHeight - CheckboxSize) * 0.5f,
                         CheckboxSize,
                         CheckboxSize);
 
@@ -137,6 +140,52 @@ namespace JoltPhysics.Unity.Editor
             }
 
             EditorGUILayout.EndScrollView();
+        }
+    }
+
+    /// <summary>
+    /// Project Settings > Jolt Physics panel.
+    /// </summary>
+    static class JoltPhysicsSettingsProvider
+    {
+        [SettingsProvider]
+        public static SettingsProvider CreateProvider()
+        {
+            return new SettingsProvider("Project/Jolt Physics", SettingsScope.Project)
+            {
+                label = "Jolt Physics",
+                guiHandler = OnGUI,
+                keywords = new[] { "Jolt", "Physics", "Layer", "Collision" }
+            };
+        }
+
+        static void OnGUI(string searchContext)
+        {
+            var settings = JoltPhysicsSettings.Instance;
+            if (settings == null)
+            {
+                EditorGUILayout.HelpBox(
+                    "JoltPhysicsSettings asset not found. Click below to create one.",
+                    MessageType.Warning);
+                if (GUILayout.Button("Create Settings Asset"))
+                    _ = JoltPhysicsSettings.Instance;
+                return;
+            }
+
+            JoltPhysicsSettingsDrawer.DrawSettings(settings);
+        }
+    }
+
+    /// <summary>
+    /// Custom inspector for the JoltPhysicsSettings ScriptableObject asset.
+    /// Shows the same UI as Project Settings > Jolt Physics.
+    /// </summary>
+    [CustomEditor(typeof(JoltPhysicsSettings))]
+    sealed class JoltPhysicsSettingsEditor : UnityEditor.Editor
+    {
+        public override void OnInspectorGUI()
+        {
+            JoltPhysicsSettingsDrawer.DrawSettings((JoltPhysicsSettings)target);
         }
     }
 }
