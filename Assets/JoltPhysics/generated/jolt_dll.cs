@@ -5,7 +5,7 @@ namespace JoltPhysics
 {
     internal static class jolt_dll
     {
-#if !UNITY_IOS
+#if !UNITY_IOS || UNITY_EDITOR
         public const string DLL_NAME = "libjoltc";
 #else
         public const string DLL_NAME = "__Internal";
