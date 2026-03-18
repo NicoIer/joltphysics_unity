@@ -69,8 +69,8 @@ namespace JoltPhysics
     {
         /// <summary>
         /// Creates a complete physics world from data.
-        /// The caller must have called <see cref="JoltApi.Init"/> before and
-        /// must call <see cref="JoltApi.Shutdown"/> after disposing the returned instance.
+        /// The caller must have called <see cref="JoltAPI.Init"/> before and
+        /// must call <see cref="JoltAPI.Shutdown"/> after disposing the returned instance.
         /// </summary>
         public static PhysicsWorldInstance CreateWorld(WorldData data)
         {

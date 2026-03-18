@@ -26,7 +26,7 @@ namespace JoltPhysics.Sample
 
         private void Awake()
         {
-            JoltApi.Init();
+            JoltAPI.Init();
 
             // Set up broad phase layers
             _bpLayerInterface = new BroadPhaseLayerInterfaceTable(2, 2);
@@ -116,7 +116,7 @@ namespace JoltPhysics.Sample
             if (_ballGO != null) Destroy(_ballGO);
             if (_floorGO != null) Destroy(_floorGO);
 
-            JoltApi.Shutdown();
+            JoltAPI.Shutdown();
         }
     }
 }

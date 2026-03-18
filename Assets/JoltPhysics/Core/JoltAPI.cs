@@ -3,7 +3,7 @@
 
 namespace JoltPhysics
 {
-    public static class JoltApi
+    public static class JoltAPI
     {
         public static bool Init()
         {

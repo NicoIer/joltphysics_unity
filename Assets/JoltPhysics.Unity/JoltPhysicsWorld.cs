@@ -46,7 +46,7 @@ namespace JoltPhysics.Unity
                 return;
             }
 
-            if (!JoltApi.Init())
+            if (!JoltAPI.Init())
             {
                 Debug.LogError("Failed to initialize Jolt Physics.");
                 return;
@@ -167,7 +167,7 @@ namespace JoltPhysics.Unity
 
             if (_initialized)
             {
-                JoltApi.Shutdown();
+                JoltAPI.Shutdown();
                 _initialized = false;
             }
 
