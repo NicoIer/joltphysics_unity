@@ -19,15 +19,17 @@ namespace JoltPhysics.Unity.Editor
             var so = new SerializedObject(settings);
             so.Update();
 
+            var dataProp = so.FindProperty("_data");
+
             EditorGUILayout.LabelField("Global Physics", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(so.FindProperty("_gravity"));
-            EditorGUILayout.PropertyField(so.FindProperty("_collisionSteps"));
-            EditorGUILayout.PropertyField(so.FindProperty("_maxBodies"));
-            EditorGUILayout.PropertyField(so.FindProperty("_maxContactConstraints"));
+            EditorGUILayout.PropertyField(dataProp.FindPropertyRelative("gravity"));
+            EditorGUILayout.PropertyField(dataProp.FindPropertyRelative("collisionSteps"));
+            EditorGUILayout.PropertyField(dataProp.FindPropertyRelative("maxBodies"));
+            EditorGUILayout.PropertyField(dataProp.FindPropertyRelative("maxContactConstraints"));
 
             EditorGUILayout.Space(10);
             EditorGUILayout.LabelField("Object Layers", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(so.FindProperty("_layers"), true);
+            EditorGUILayout.PropertyField(dataProp.FindPropertyRelative("layers"), true);
 
             so.ApplyModifiedProperties();
 

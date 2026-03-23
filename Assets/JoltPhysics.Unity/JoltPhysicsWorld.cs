@@ -13,6 +13,8 @@ namespace JoltPhysics.Unity
 
         PhysicsSystem _physicsSystem;
         JobSystemThreadPool _jobSystem;
+        private TempAllocator _tempAllocator;
+
         BroadPhaseLayerInterfaceTable _broadPhaseLayerInterface;
         ObjectLayerPairFilterTable _objectLayerPairFilter;
         ObjectVsBroadPhaseLayerFilterTable _objectVsBroadPhaseLayerFilter;
@@ -53,6 +55,7 @@ namespace JoltPhysics.Unity
             }
 
             _jobSystem = new JobSystemThreadPool();
+            _tempAllocator = new TempAllocator();
 
             int numObjectLayers = config.LayerCount;
             int numBroadPhaseLayers = config.GetBroadPhaseLayerCount();
@@ -116,7 +119,7 @@ namespace JoltPhysics.Unity
             var config = JoltPhysicsSettings.Instance;
             int collisionSteps = config != null ? config.CollisionSteps : 1;
 
-            _physicsSystem.Update(Time.fixedDeltaTime, collisionSteps, _jobSystem);
+            _physicsSystem.Update(Time.fixedDeltaTime, collisionSteps, _tempAllocator, _jobSystem);
 
             // Sync transforms from Jolt to Unity
             for (int i = _bodies.Count - 1; i >= 0; i--)

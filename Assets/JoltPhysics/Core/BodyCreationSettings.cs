@@ -109,6 +109,50 @@ namespace JoltPhysics
             }
         }
 
+        public bool IsSensor
+        {
+            get
+            {
+                ThrowIfDisposed();
+                unsafe
+                {
+                    return Methods.JPH_BodyCreationSettings_GetIsSensor(
+                        (JPH_BodyCreationSettings*)Handle) != 0;
+                }
+            }
+            set
+            {
+                ThrowIfDisposed();
+                unsafe
+                {
+                    Methods.JPH_BodyCreationSettings_SetIsSensor(
+                        (JPH_BodyCreationSettings*)Handle, (byte)(value ? 1 : 0));
+                }
+            }
+        }
+
+        public AllowedDOFs AllowedDOFs
+        {
+            get
+            {
+                ThrowIfDisposed();
+                unsafe
+                {
+                    return (AllowedDOFs)Methods.JPH_BodyCreationSettings_GetAllowedDOFs(
+                        (JPH_BodyCreationSettings*)Handle);
+                }
+            }
+            set
+            {
+                ThrowIfDisposed();
+                unsafe
+                {
+                    Methods.JPH_BodyCreationSettings_SetAllowedDOFs(
+                        (JPH_BodyCreationSettings*)Handle, (JPH_AllowedDOFs)value);
+                }
+            }
+        }
+
         public float GravityFactor
         {
             get

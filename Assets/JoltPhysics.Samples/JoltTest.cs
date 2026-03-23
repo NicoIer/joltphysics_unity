@@ -15,6 +15,7 @@ namespace JoltPhysics.Sample
 
         private PhysicsSystem _physicsSystem;
         private JobSystemThreadPool _jobSystem;
+        private TempAllocator _tempAllocator;
         private BroadPhaseLayerInterfaceTable _bpLayerInterface;
         private ObjectLayerPairFilterTable _objectFilter;
         private ObjectVsBroadPhaseLayerFilterTable _bpFilter;
@@ -91,7 +92,7 @@ namespace JoltPhysics.Sample
         {
             if (_physicsSystem == null) return;
 
-            _physicsSystem.Update(Time.fixedDeltaTime, 1, _jobSystem);
+            _physicsSystem.Update(Time.fixedDeltaTime, 1, _tempAllocator, _jobSystem);
 
             var bodyInterface = _physicsSystem.GetBodyInterface();
             var pos = bodyInterface.GetPosition(_ballId);

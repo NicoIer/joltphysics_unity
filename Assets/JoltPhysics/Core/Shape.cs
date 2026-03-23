@@ -11,6 +11,17 @@ namespace JoltPhysics
         {
         }
 
+        public Float3 GetCenterOfMass()
+        {
+            ThrowIfDisposed();
+            unsafe
+            {
+                JPH_Vec3 result;
+                Methods.JPH_Shape_GetCenterOfMass((JPH_Shape*)Handle, &result);
+                return new Float3(result.x, result.y, result.z);
+            }
+        }
+
         protected override void DestroyNative()
         {
             unsafe
@@ -39,6 +50,42 @@ namespace JoltPhysics
                 unsafe
                 {
                     return Methods.JPH_SphereShape_GetRadius((JPH_SphereShape*)Handle);
+                }
+            }
+        }
+    }
+
+    public sealed class CapsuleShape : Shape
+    {
+        public CapsuleShape(float halfHeightOfCylinder, float radius)
+            : base(IntPtr.Zero)
+        {
+            unsafe
+            {
+                Handle = (IntPtr)Methods.JPH_CapsuleShape_Create(halfHeightOfCylinder, radius);
+            }
+        }
+
+        public float Radius
+        {
+            get
+            {
+                ThrowIfDisposed();
+                unsafe
+                {
+                    return Methods.JPH_CapsuleShape_GetRadius((JPH_CapsuleShape*)Handle);
+                }
+            }
+        }
+
+        public float HalfHeightOfCylinder
+        {
+            get
+            {
+                ThrowIfDisposed();
+                unsafe
+                {
+                    return Methods.JPH_CapsuleShape_GetHalfHeightOfCylinder((JPH_CapsuleShape*)Handle);
                 }
             }
         }

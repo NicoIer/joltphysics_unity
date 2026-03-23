@@ -1,6 +1,3 @@
-// Copyright (c) 2026 NicoIer and Contributors.
-// Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
-
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -263,6 +260,10 @@ namespace JoltPhysics
     }
 
     internal partial struct JPH_GroupFilterTable
+    {
+    }
+
+    internal partial struct JPH_TempAllocator
     {
     }
 
@@ -1599,6 +1600,10 @@ namespace JoltPhysics
     {
     }
 
+    internal partial struct JPH_TempAllocator
+    {
+    }
+
     internal unsafe partial struct JPH_PhysicsSystemSettings
     {
         [NativeTypeName("uint32_t")]
@@ -2035,6 +2040,12 @@ namespace JoltPhysics
         public static extern void JPH_JobSystem_Destroy(JPH_JobSystem* jobSystem);
 
         [DllImport(jolt_dll.DLL_NAME, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern JPH_TempAllocator* JPH_TempAllocator_Create([NativeTypeName("uint32_t")] uint size);
+
+        [DllImport(jolt_dll.DLL_NAME, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern void JPH_TempAllocator_Destroy(JPH_TempAllocator* allocator);
+
+        [DllImport(jolt_dll.DLL_NAME, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         [return: NativeTypeName("bool")]
         public static extern byte JPH_Init();
 
@@ -2118,7 +2129,7 @@ namespace JoltPhysics
         public static extern void JPH_PhysicsSystem_OptimizeBroadPhase(JPH_PhysicsSystem* system);
 
         [DllImport(jolt_dll.DLL_NAME, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern JPH_PhysicsUpdateError JPH_PhysicsSystem_Update(JPH_PhysicsSystem* system, float deltaTime, int collisionSteps, JPH_JobSystem* jobSystem);
+        public static extern JPH_PhysicsUpdateError JPH_PhysicsSystem_Update(JPH_PhysicsSystem* system, float deltaTime, int collisionSteps, JPH_TempAllocator* tempAllocator, JPH_JobSystem* jobSystem);
 
         [DllImport(jolt_dll.DLL_NAME, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern JPH_BodyInterface* JPH_PhysicsSystem_GetBodyInterface(JPH_PhysicsSystem* system);
@@ -4638,13 +4649,13 @@ namespace JoltPhysics
         public static extern void JPH_CharacterVirtual_FinishTrackingContactChanges(JPH_CharacterVirtual* character);
 
         [DllImport(jolt_dll.DLL_NAME, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void JPH_CharacterVirtual_Update(JPH_CharacterVirtual* character, float deltaTime, [NativeTypeName("JPH_ObjectLayer")] uint layer, JPH_PhysicsSystem* system, [NativeTypeName("const JPH_BodyFilter *")] JPH_BodyFilter* bodyFilter, [NativeTypeName("const JPH_ShapeFilter *")] JPH_ShapeFilter* shapeFilter);
+        public static extern void JPH_CharacterVirtual_Update(JPH_CharacterVirtual* character, float deltaTime, [NativeTypeName("JPH_ObjectLayer")] uint layer, JPH_PhysicsSystem* system, [NativeTypeName("const JPH_BodyFilter *")] JPH_BodyFilter* bodyFilter, [NativeTypeName("const JPH_ShapeFilter *")] JPH_ShapeFilter* shapeFilter, JPH_TempAllocator* tempAllocator);
 
         [DllImport(jolt_dll.DLL_NAME, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void JPH_CharacterVirtual_ExtendedUpdate(JPH_CharacterVirtual* character, float deltaTime, [NativeTypeName("const JPH_ExtendedUpdateSettings *")] JPH_ExtendedUpdateSettings* settings, [NativeTypeName("JPH_ObjectLayer")] uint layer, JPH_PhysicsSystem* system, [NativeTypeName("const JPH_BodyFilter *")] JPH_BodyFilter* bodyFilter, [NativeTypeName("const JPH_ShapeFilter *")] JPH_ShapeFilter* shapeFilter);
+        public static extern void JPH_CharacterVirtual_ExtendedUpdate(JPH_CharacterVirtual* character, float deltaTime, [NativeTypeName("const JPH_ExtendedUpdateSettings *")] JPH_ExtendedUpdateSettings* settings, [NativeTypeName("JPH_ObjectLayer")] uint layer, JPH_PhysicsSystem* system, [NativeTypeName("const JPH_BodyFilter *")] JPH_BodyFilter* bodyFilter, [NativeTypeName("const JPH_ShapeFilter *")] JPH_ShapeFilter* shapeFilter, JPH_TempAllocator* tempAllocator);
 
         [DllImport(jolt_dll.DLL_NAME, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void JPH_CharacterVirtual_RefreshContacts(JPH_CharacterVirtual* character, [NativeTypeName("JPH_ObjectLayer")] uint layer, JPH_PhysicsSystem* system, [NativeTypeName("const JPH_BodyFilter *")] JPH_BodyFilter* bodyFilter, [NativeTypeName("const JPH_ShapeFilter *")] JPH_ShapeFilter* shapeFilter);
+        public static extern void JPH_CharacterVirtual_RefreshContacts(JPH_CharacterVirtual* character, [NativeTypeName("JPH_ObjectLayer")] uint layer, JPH_PhysicsSystem* system, [NativeTypeName("const JPH_BodyFilter *")] JPH_BodyFilter* bodyFilter, [NativeTypeName("const JPH_ShapeFilter *")] JPH_ShapeFilter* shapeFilter, JPH_TempAllocator* tempAllocator);
 
         [DllImport(jolt_dll.DLL_NAME, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         [return: NativeTypeName("bool")]
@@ -4652,18 +4663,18 @@ namespace JoltPhysics
 
         [DllImport(jolt_dll.DLL_NAME, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         [return: NativeTypeName("bool")]
-        public static extern byte JPH_CharacterVirtual_WalkStairs(JPH_CharacterVirtual* character, float deltaTime, [NativeTypeName("const JPH_Vec3 *")] JPH_Vec3* stepUp, [NativeTypeName("const JPH_Vec3 *")] JPH_Vec3* stepForward, [NativeTypeName("const JPH_Vec3 *")] JPH_Vec3* stepForwardTest, [NativeTypeName("const JPH_Vec3 *")] JPH_Vec3* stepDownExtra, [NativeTypeName("JPH_ObjectLayer")] uint layer, JPH_PhysicsSystem* system, [NativeTypeName("const JPH_BodyFilter *")] JPH_BodyFilter* bodyFilter, [NativeTypeName("const JPH_ShapeFilter *")] JPH_ShapeFilter* shapeFilter);
+        public static extern byte JPH_CharacterVirtual_WalkStairs(JPH_CharacterVirtual* character, float deltaTime, [NativeTypeName("const JPH_Vec3 *")] JPH_Vec3* stepUp, [NativeTypeName("const JPH_Vec3 *")] JPH_Vec3* stepForward, [NativeTypeName("const JPH_Vec3 *")] JPH_Vec3* stepForwardTest, [NativeTypeName("const JPH_Vec3 *")] JPH_Vec3* stepDownExtra, [NativeTypeName("JPH_ObjectLayer")] uint layer, JPH_PhysicsSystem* system, [NativeTypeName("const JPH_BodyFilter *")] JPH_BodyFilter* bodyFilter, [NativeTypeName("const JPH_ShapeFilter *")] JPH_ShapeFilter* shapeFilter, JPH_TempAllocator* tempAllocator);
 
         [DllImport(jolt_dll.DLL_NAME, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         [return: NativeTypeName("bool")]
-        public static extern byte JPH_CharacterVirtual_StickToFloor(JPH_CharacterVirtual* character, [NativeTypeName("const JPH_Vec3 *")] JPH_Vec3* stepDown, [NativeTypeName("JPH_ObjectLayer")] uint layer, JPH_PhysicsSystem* system, [NativeTypeName("const JPH_BodyFilter *")] JPH_BodyFilter* bodyFilter, [NativeTypeName("const JPH_ShapeFilter *")] JPH_ShapeFilter* shapeFilter);
+        public static extern byte JPH_CharacterVirtual_StickToFloor(JPH_CharacterVirtual* character, [NativeTypeName("const JPH_Vec3 *")] JPH_Vec3* stepDown, [NativeTypeName("JPH_ObjectLayer")] uint layer, JPH_PhysicsSystem* system, [NativeTypeName("const JPH_BodyFilter *")] JPH_BodyFilter* bodyFilter, [NativeTypeName("const JPH_ShapeFilter *")] JPH_ShapeFilter* shapeFilter, JPH_TempAllocator* tempAllocator);
 
         [DllImport(jolt_dll.DLL_NAME, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void JPH_CharacterVirtual_UpdateGroundVelocity(JPH_CharacterVirtual* character);
 
         [DllImport(jolt_dll.DLL_NAME, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         [return: NativeTypeName("bool")]
-        public static extern byte JPH_CharacterVirtual_SetShape(JPH_CharacterVirtual* character, [NativeTypeName("const JPH_Shape *")] JPH_Shape* shape, float maxPenetrationDepth, [NativeTypeName("JPH_ObjectLayer")] uint layer, JPH_PhysicsSystem* system, [NativeTypeName("const JPH_BodyFilter *")] JPH_BodyFilter* bodyFilter, [NativeTypeName("const JPH_ShapeFilter *")] JPH_ShapeFilter* shapeFilter);
+        public static extern byte JPH_CharacterVirtual_SetShape(JPH_CharacterVirtual* character, [NativeTypeName("const JPH_Shape *")] JPH_Shape* shape, float maxPenetrationDepth, [NativeTypeName("JPH_ObjectLayer")] uint layer, JPH_PhysicsSystem* system, [NativeTypeName("const JPH_BodyFilter *")] JPH_BodyFilter* bodyFilter, [NativeTypeName("const JPH_ShapeFilter *")] JPH_ShapeFilter* shapeFilter, JPH_TempAllocator* tempAllocator);
 
         [DllImport(jolt_dll.DLL_NAME, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void JPH_CharacterVirtual_SetInnerBodyShape(JPH_CharacterVirtual* character, [NativeTypeName("const JPH_Shape *")] JPH_Shape* shape);

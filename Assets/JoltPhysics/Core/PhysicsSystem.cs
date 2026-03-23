@@ -89,7 +89,7 @@ namespace JoltPhysics
             }
         }
 
-        public void Update(float deltaTime, int collisionSteps, JobSystemThreadPool jobSystem)
+        public void Update(float deltaTime, int collisionSteps, TempAllocator tempAllocator, JobSystemThreadPool jobSystem)
         {
             ThrowIfDisposed();
             unsafe
@@ -98,7 +98,29 @@ namespace JoltPhysics
                     (JPH_PhysicsSystem*)Handle,
                     deltaTime,
                     collisionSteps,
+                    (JPH_TempAllocator*)tempAllocator.Handle,
                     (JPH_JobSystem*)jobSystem.Handle);
+            }
+        }
+
+        public void SetContactListener(ContactListener listener)
+        {
+            ThrowIfDisposed();
+            unsafe
+            {
+                Methods.JPH_PhysicsSystem_SetContactListener(
+                    (JPH_PhysicsSystem*)Handle,
+                    (JPH_ContactListener*)listener.Handle);
+            }
+        }
+
+        public NarrowPhaseQuery GetNarrowPhaseQuery()
+        {
+            ThrowIfDisposed();
+            unsafe
+            {
+                var ptr = (IntPtr)Methods.JPH_PhysicsSystem_GetNarrowPhaseQuery((JPH_PhysicsSystem*)Handle);
+                return new NarrowPhaseQuery(ptr);
             }
         }
 

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/chenjun/Desktop/Project/BattleProcess/**)"
+    ]
+  }
+}

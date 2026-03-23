@@ -9,9 +9,9 @@ namespace JoltPhysics
     {
         public static readonly BodyID Invalid = new(0xffffffff);
 
-        internal readonly uint Value;
+        public readonly uint Value;
 
-        internal BodyID(uint value)
+        public BodyID(uint value)
         {
             Value = value;
         }

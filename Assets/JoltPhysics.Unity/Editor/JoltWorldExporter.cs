@@ -56,27 +56,9 @@ namespace JoltPhysics.Unity.Editor
                 return null;
             }
 
-            // Global settings
-            var data = new WorldData
-            {
-                gravity = settings.Gravity.ToJolt(),
-                maxBodies = settings.MaxBodies,
-                maxContactConstraints = settings.MaxContactConstraints,
-                collisionSteps = settings.CollisionSteps,
-            };
-
-            // Layers
-            var unityLayers = settings.Layers;
-            data.layers = new LayerData[unityLayers.Length];
-            for (int i = 0; i < unityLayers.Length; i++)
-            {
-                data.layers[i] = new LayerData
-                {
-                    name = unityLayers[i].name,
-                    broadPhaseLayer = unityLayers[i].broadPhaseLayer,
-                    collisionMask = GetCollisionMaskForLayer(settings, i),
-                };
-            }
+            // Global settings + layers from PhysicsSettingsData
+            var data = new WorldData();
+            settings.Data.ApplyToWorldData(data);
 
             // Bodies
             var joltBodies = Object.FindObjectsByType<JoltBody>(FindObjectsSortMode.None);
@@ -88,17 +70,6 @@ namespace JoltPhysics.Unity.Editor
             }
 
             return data;
-        }
-
-        static uint GetCollisionMaskForLayer(JoltPhysicsSettings settings, int layer)
-        {
-            uint mask = 0;
-            for (int j = 0; j < settings.LayerCount; j++)
-            {
-                if (settings.GetCollisionEnabled(layer, j))
-                    mask |= 1u << j;
-            }
-            return mask;
         }
 
         static BodyData ExportBody(JoltBody body)
@@ -208,15 +179,18 @@ namespace JoltPhysics.Unity.Editor
             var so = new SerializedObject(settings);
             so.Update();
 
-            so.FindProperty("_gravity").vector3Value = new Vector3(data.gravity.x, data.gravity.y, data.gravity.z);
-            so.FindProperty("_collisionSteps").intValue = data.collisionSteps;
-            so.FindProperty("_maxBodies").longValue = data.maxBodies;
-            so.FindProperty("_maxContactConstraints").longValue = data.maxContactConstraints;
+            var dataProp = so.FindProperty("_data");
+            dataProp.FindPropertyRelative("gravity").FindPropertyRelative("x").floatValue = data.gravity.x;
+            dataProp.FindPropertyRelative("gravity").FindPropertyRelative("y").floatValue = data.gravity.y;
+            dataProp.FindPropertyRelative("gravity").FindPropertyRelative("z").floatValue = data.gravity.z;
+            dataProp.FindPropertyRelative("collisionSteps").intValue = data.collisionSteps;
+            dataProp.FindPropertyRelative("maxBodies").longValue = data.maxBodies;
+            dataProp.FindPropertyRelative("maxContactConstraints").longValue = data.maxContactConstraints;
 
             // Layers
             if (data.layers != null && data.layers.Length > 0)
             {
-                var layersProp = so.FindProperty("_layers");
+                var layersProp = dataProp.FindPropertyRelative("layers");
                 layersProp.arraySize = data.layers.Length;
                 for (int i = 0; i < data.layers.Length; i++)
                 {
@@ -226,7 +200,7 @@ namespace JoltPhysics.Unity.Editor
                 }
 
                 // Collision masks
-                var maskProp = so.FindProperty("_collisionMask");
+                var maskProp = dataProp.FindPropertyRelative("collisionMask");
                 maskProp.arraySize = data.layers.Length;
                 for (int i = 0; i < data.layers.Length; i++)
                 {

@@ -2,6 +2,7 @@
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 
 using System;
+using MemoryPack;
 
 namespace JoltPhysics
 {
@@ -11,10 +12,13 @@ namespace JoltPhysics
         Sphere = 1,
         Ellipsoid = 2,
         Mesh = 3,
+        Capsule = 4,
+        ConvexHull = 5,
     }
 
     [Serializable]
-    public class LayerData
+    [MemoryPackable]
+    public partial class LayerData
     {
         public string name;
         public byte broadPhaseLayer;
@@ -26,7 +30,8 @@ namespace JoltPhysics
     /// Only fields relevant to <see cref="type"/> are populated.
     /// </summary>
     [Serializable]
-    public class ShapeData
+    [MemoryPackable]
+    public partial class ShapeData
     {
         public JoltShapeType type;
 
@@ -38,10 +43,13 @@ namespace JoltPhysics
         // Sphere
         public float radius;
 
+        // Capsule
+        public float halfHeight;
+
         // Ellipsoid
         public Float3 radii;
 
-        // Mesh
+        // ConvexHull / Mesh
         public Float3[] vertices;
         public int[] triangles;
 
@@ -74,6 +82,25 @@ namespace JoltPhysics
             };
         }
 
+        public static ShapeData CreateCapsule(float halfHeight, float radius)
+        {
+            return new ShapeData
+            {
+                type = JoltShapeType.Capsule,
+                halfHeight = halfHeight,
+                radius = radius,
+            };
+        }
+
+        public static ShapeData CreateConvexHull(Float3[] vertices)
+        {
+            return new ShapeData
+            {
+                type = JoltShapeType.ConvexHull,
+                vertices = vertices,
+            };
+        }
+
         public static ShapeData CreateMesh(Float3[] vertices, int[] triangles)
         {
             return new ShapeData
@@ -86,7 +113,8 @@ namespace JoltPhysics
     }
 
     [Serializable]
-    public class BodyData
+    [MemoryPackable]
+    public partial class BodyData
     {
         public string name;
         public Float3 position;
@@ -102,7 +130,8 @@ namespace JoltPhysics
     }
 
     [Serializable]
-    public class WorldData
+    [MemoryPackable]
+    public partial class WorldData
     {
         public Float3 gravity;
         public uint maxBodies;

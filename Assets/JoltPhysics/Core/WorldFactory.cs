@@ -14,6 +14,7 @@ namespace JoltPhysics
     {
         public PhysicsSystem PhysicsSystem { get; internal set; }
         public JobSystemThreadPool JobSystem { get; internal set; }
+        public TempAllocator TempAllocator { get; internal set; }
         public BodyInterface BodyInterface { get; internal set; }
         public BodyID[] BodyIds { get; internal set; }
 
@@ -28,7 +29,7 @@ namespace JoltPhysics
         public void Update(float deltaTime, int collisionSteps)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(PhysicsWorldInstance));
-            PhysicsSystem.Update(deltaTime, collisionSteps, JobSystem);
+            PhysicsSystem.Update(deltaTime, collisionSteps, TempAllocator, JobSystem);
         }
 
         public void Dispose()
@@ -54,6 +55,7 @@ namespace JoltPhysics
             }
 
             PhysicsSystem?.Dispose();
+            TempAllocator?.Dispose();
             JobSystem?.Dispose();
             ObjectVsBroadPhaseLayerFilter?.Dispose();
             ObjectLayerPairFilter?.Dispose();
@@ -117,6 +119,7 @@ namespace JoltPhysics
             physicsSystem.Gravity = data.gravity;
 
             var jobSystem = new JobSystemThreadPool();
+            var tempAllocator = new TempAllocator();
             var bodyInterface = physicsSystem.GetBodyInterface();
 
             // Create bodies
@@ -157,6 +160,7 @@ namespace JoltPhysics
             {
                 PhysicsSystem = physicsSystem,
                 JobSystem = jobSystem,
+                TempAllocator = tempAllocator,
                 BodyInterface = bodyInterface,
                 BodyIds = bodyIds.ToArray(),
                 BroadPhaseLayerInterface = broadPhase,
